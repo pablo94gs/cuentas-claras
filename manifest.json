@@ -1,0 +1,16 @@
+{
+  "name": "Cuentas Claras",
+  "short_name": "Cuentas",
+  "description": "Control de deudas, ingresos y pagos mes a mes, con consejos financieros.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f3ef",
+  "theme_color": "#0f5f58",
+  "lang": "es",
+  "icons": [
+    { "src": "icono.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" },
+    { "src": "icono-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icono-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cuentas Claras</title>
+<meta name="theme-color" content="#0f5f58">
+<meta name="description" content="Control de deudas, ingresos y pagos mes a mes, con consejos financieros.">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="cabecera">
+  <div class="marca">
+    <img src="icono.svg" alt="" width="34" height="34">
+    <div>
+      <h1>Cuentas Claras</h1>
+      <p id="mesActual" class="sub"></p>
+    </div>
+  </div>
+  <button class="btn-icono" id="btnRespaldo" title="Respaldo de datos" aria-label="Respaldo de datos">
+    <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67 2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z"/></svg>
+  </button>
+</header>
+
+<nav class="pestanas" role="tablist">
+  <button role="tab" data-tab="resumen">Resumen</button>
+  <button role="tab" data-tab="deudas">Deudas</button>
+  <button role="tab" data-tab="dinero">Ingresos y gastos</button>
+  <button role="tab" data-tab="historial">Mes a mes</button>
+  <button role="tab" data-tab="consejos">Consejos</button>
+</nav>
+
+<main id="vista" class="vista"></main>
+
+<div id="tooltip" class="tooltip" hidden></div>
+<div id="aviso" class="aviso" hidden></div>
+
+<!-- Formulario de deuda -->
+<dialog id="dlgDeuda">
+  <form id="formDeuda" method="dialog">
+    <h2 id="tituloDeuda">Nueva deuda</h2>
+    <label>Acreedor <small>(banco, almacén, tarjeta, persona…)</small>
+      <input name="acreedor" required maxlength="60" placeholder="Ej.: Banco Pichincha, Comandato">
+    </label>
+    <label>Tipo
+      <select name="tipo">
+        <option value="banco">Banco / cooperativa</option>
+        <option value="tarjeta">Tarjeta de crédito</option>
+        <option value="local">Local comercial / almacén</option>
+        <option value="persona">Persona / familiar</option>
+        <option value="otro">Otro</option>
+      </select>
+    </label>
+    <div class="fila2">
+      <label>Valor total de la deuda ($)
+        <input name="total" type="number" inputmode="decimal" min="0.01" step="0.01" required>
+      </label>
+      <label>Ya pagado antes ($) <small>(opcional)</small>
+        <input name="pagadoAntes" type="number" inputmode="decimal" min="0" step="0.01" value="0">
+      </label>
+    </div>
+    <div class="fila2">
+      <label>Cuota mensual ($)
+        <input name="cuota" type="number" inputmode="decimal" min="0" step="0.01" required>
+      </label>
+      <label>Día de pago
+        <input name="diaPago" type="number" inputmode="numeric" min="1" max="31" value="15">
+      </label>
+    </div>
+    <div class="fila2">
+      <label>Interés anual (%) <small>(opcional)</small>
+        <input name="tasa" type="number" inputmode="decimal" min="0" max="200" step="0.01" placeholder="Ej.: 16.5">
+      </label>
+      <label>Desde (mes)
+        <input name="inicio" type="month">
+      </label>
+    </div>
+    <p class="nota">El valor total es lo que debes pagar en total, con los intereses si ya los conoces.
+      El saldo se calcula restando lo que vas pagando.</p>
+    <div class="acciones">
+      <button type="button" class="btn sec" data-cerrar>Cancelar</button>
+      <button type="submit" class="btn">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Formulario de pago -->
+<dialog id="dlgPago">
+  <form id="formPago" method="dialog">
+    <h2>Registrar pago</h2>
+    <p id="pagoA" class="sub"></p>
+    <div class="fila2">
+      <label>Monto ($)
+        <input name="monto" type="number" inputmode="decimal" min="0.01" step="0.01" required>
+      </label>
+      <label>Fecha
+        <input name="fecha" type="date" required>
+      </label>
+    </div>
+    <label>Nota <small>(opcional)</small>
+      <input name="nota" maxlength="80" placeholder="Ej.: abono extra, cuota 5 de 24">
+    </label>
+    <div class="acciones">
+      <button type="button" class="btn sec" data-cerrar>Cancelar</button>
+      <button type="submit" class="btn">Guardar pago</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Ingreso o gasto fijo / extra -->
+<dialog id="dlgMov">
+  <form id="formMov" method="dialog">
+    <h2 id="tituloMov">Nuevo ingreso</h2>
+    <label>Descripción
+      <input name="nombre" required maxlength="60">
+    </label>
+    <div class="fila2">
+      <label>Monto ($)
+        <input name="monto" type="number" inputmode="decimal" min="0.01" step="0.01" required>
+      </label>
+      <label id="lblFechaMov">Mes
+        <input name="mes" type="month">
+      </label>
+    </div>
+    <label id="lblEsencial" class="check"><input type="checkbox" name="esencial" checked> Es un gasto esencial (vivienda, comida, servicios, transporte, salud)</label>
+    <div class="acciones">
+      <button type="button" class="btn sec" data-cerrar>Cancelar</button>
+      <button type="submit" class="btn">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Respaldo -->
+<dialog id="dlgRespaldo">
+  <form method="dialog">
+    <h2>Tus datos</h2>
+    <p>Todo se guarda <b>solo en este dispositivo y navegador</b>: no se envía a ningún servidor.
+      Si cambias de celular o borras los datos del navegador, se pierde. Descarga un respaldo de vez en cuando.</p>
+    <div class="acciones col">
+      <button type="button" class="btn" id="btnExportar">Descargar respaldo</button>
+      <label class="btn sec archivo">Cargar respaldo
+        <input type="file" id="inpImportar" accept="application/json,.json" hidden>
+      </label>
+      <button type="button" class="btn sec" id="btnEjemplo">Cargar datos de ejemplo</button>
+      <button type="button" class="btn peligro" id="btnBorrarTodo">Borrar todos los datos</button>
+      <button type="button" class="btn sec" data-cerrar>Cerrar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Confirmación -->
+<dialog id="dlgConfirmar">
+  <form method="dialog">
+    <h2 id="confTitulo">¿Seguro?</h2>
+    <p id="confTexto"></p>
+    <div class="acciones">
+      <button type="button" class="btn sec" data-cerrar>Cancelar</button>
+      <button type="button" class="btn peligro" id="confSi">Sí, continuar</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
