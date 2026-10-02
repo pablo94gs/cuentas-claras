@@ -21,6 +21,9 @@
     </div>
   </div>
   <div class="botones-cab">
+  <button class="btn-icono" id="btnCuenta" title="Mi cuenta" aria-label="Mi cuenta" hidden>
+    <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 12c2.7 0 4.9-2.2 4.9-4.9S14.7 2.2 12 2.2 7.1 4.4 7.1 7.1 9.3 12 12 12zm0 2.4c-3.3 0-9.8 1.6-9.8 4.9v2.4h19.6v-2.4c0-3.3-6.5-4.9-9.8-4.9z"/></svg>
+  </button>
   <button class="btn-icono" id="btnRespaldo" title="Respaldo de datos" aria-label="Respaldo de datos">
     <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67 2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z"/></svg>
   </button>
@@ -139,8 +142,8 @@
 <dialog id="dlgRespaldo">
   <form method="dialog">
     <h2>Tus datos</h2>
-    <p>Tus datos quedan guardados en este equipo. Abierta desde tu cuenta de Claude, la app además los guarda
-      en tu espacio privado y los ves iguales en el iPad, el celular y la computadora (☁ junto al mes).
+    <p>Tus datos quedan guardados en este equipo. Si además <b>entras con tu correo</b> (botón de la persona),
+      se guardan en tu cuenta y los ves iguales en el iPad y en el celular (☁ junto al mes).
       Descarga un respaldo de vez en cuando.</p>
     <div class="acciones col">
       <button type="button" class="btn" id="btnExportar">Descargar respaldo</button>
@@ -150,6 +153,39 @@
       <button type="button" class="btn sec" id="btnEjemplo">Cargar datos de ejemplo</button>
       <button type="button" class="btn peligro" id="btnBorrarTodo">Borrar todos los datos</button>
       <button type="button" class="btn sec" data-cerrar>Cerrar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Cuenta -->
+<dialog id="dlgCuenta">
+  <form id="formCuenta">
+    <h2 id="cuentaTitulo">Entrar a tu cuenta</h2>
+    <div id="cuentaFuera">
+      <p class="sub">Entra con tu correo (Gmail, Hotmail u otro) y una clave para ver los mismos datos en el iPad y en el celular.</p>
+      <div class="segmento" role="tablist">
+        <button type="button" data-modo="entrar" aria-selected="true">Entrar</button>
+        <button type="button" data-modo="crear" aria-selected="false">Crear cuenta</button>
+      </div>
+      <label>Correo
+        <input name="correo" id="cuentaCorreoInp" type="email" autocomplete="username" inputmode="email">
+      </label>
+      <label>Clave <small>(mínimo 6 caracteres)</small>
+        <input name="clave" id="cuentaClaveInp" type="password" autocomplete="current-password">
+      </label>
+      <p id="cuentaError" class="error" hidden></p>
+      <div class="acciones">
+        <button type="button" class="btn-texto" id="btnOlvide">Olvidé mi clave</button>
+        <button type="submit" class="btn" id="btnEntrar">Entrar</button>
+      </div>
+    </div>
+    <div id="cuentaDentro" hidden>
+      <p>Sesión iniciada como <b id="cuentaCorreo"></b></p>
+      <p class="sub" id="cuentaSync"></p>
+      <div class="acciones">
+        <button type="button" class="btn sec" data-cerrar>Cerrar</button>
+        <button type="button" class="btn peligro" id="btnSalir">Cerrar sesión</button>
+      </div>
     </div>
   </form>
 </dialog>
@@ -179,6 +215,6 @@
 </dialog>
 
 <script src="app.js"></script>
-<script src="sincronizar.js"></script>
+<script type="module" src="nube.js"></script>
 </body>
 </html>

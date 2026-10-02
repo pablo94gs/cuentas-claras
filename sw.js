@@ -1,7 +1,7 @@
 // Primero la red para los archivos propios (así nunca queda una versión vieja);
 // la caché solo sirve para abrir la app sin internet.
-const CACHE = 'cuentas-claras-v3';
-const ARCHIVOS = ['./', 'index.html', 'app.css', 'app.js', 'sincronizar.js', 'manifest.json', 'icono.svg', 'icono-192.png', 'icono-512.png', 'apple-touch-icon.png'];
+const CACHE = 'cuentas-claras-v4';
+const ARCHIVOS = ['./', 'index.html', 'app.css', 'app.js', 'nube.js', 'manifest.json', 'icono.svg', 'icono-192.png', 'icono-512.png', 'apple-touch-icon.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ARCHIVOS)).then(() => self.skipWaiting()));
 });
