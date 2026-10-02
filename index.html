@@ -17,12 +17,14 @@
     <img src="icono.svg" alt="" width="34" height="34">
     <div>
       <h1>Cuentas Claras</h1>
-      <p id="mesActual" class="sub"></p>
+      <p class="sub"><span id="mesActual"></span><span id="estadoNube" hidden></span></p>
     </div>
   </div>
+  <div class="botones-cab">
   <button class="btn-icono" id="btnRespaldo" title="Respaldo de datos" aria-label="Respaldo de datos">
     <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67 2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z"/></svg>
   </button>
+  </div>
 </header>
 
 <nav class="pestanas" role="tablist">
@@ -137,8 +139,9 @@
 <dialog id="dlgRespaldo">
   <form method="dialog">
     <h2>Tus datos</h2>
-    <p>Todo se guarda <b>solo en este dispositivo y navegador</b>: no se envía a ningún servidor.
-      Si cambias de celular o borras los datos del navegador, se pierde. Descarga un respaldo de vez en cuando.</p>
+    <p>Tus datos quedan guardados en este equipo. Abierta desde tu cuenta de Claude, la app además los guarda
+      en tu espacio privado y los ves iguales en el iPad, el celular y la computadora (☁ junto al mes).
+      Descarga un respaldo de vez en cuando.</p>
     <div class="acciones col">
       <button type="button" class="btn" id="btnExportar">Descargar respaldo</button>
       <label class="btn sec archivo">Cargar respaldo
@@ -147,6 +150,18 @@
       <button type="button" class="btn sec" id="btnEjemplo">Cargar datos de ejemplo</button>
       <button type="button" class="btn peligro" id="btnBorrarTodo">Borrar todos los datos</button>
       <button type="button" class="btn sec" data-cerrar>Cerrar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Elegir datos al entrar -->
+<dialog id="dlgElegir">
+  <form method="dialog">
+    <h2>¿Qué datos quieres usar?</h2>
+    <p id="elegirTexto"></p>
+    <div class="acciones col">
+      <button type="button" class="btn" id="btnUsarNube">Usar los datos de mi cuenta</button>
+      <button type="button" class="btn sec" id="btnUsarLocal">Subir los de este equipo a mi cuenta</button>
     </div>
   </form>
 </dialog>
@@ -164,5 +179,6 @@
 </dialog>
 
 <script src="app.js"></script>
+<script src="sincronizar.js"></script>
 </body>
 </html>

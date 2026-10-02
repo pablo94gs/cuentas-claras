@@ -241,3 +241,7 @@ input:focus, select:focus { outline: 2px solid var(--marca); outline-offset: 1px
   .cifra.grande .val { font-size: 2rem; }
   .comparar { grid-template-columns: 1fr; }
 }
+
+/* ── Cuenta y sincronización ─────────────────────────── */
+.botones-cab { display: flex; gap: 8px; }
+#estadoNube { margin-left: 8px; padding-left: 8px; border-left: 1px solid rgba(255,255,255,.3); }

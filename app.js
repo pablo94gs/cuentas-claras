@@ -20,9 +20,11 @@ function cargar() {
   } catch (e) { /* almacenamiento bloqueado o dañado */ }
   return VACIO();
 }
-function guardar() {
+function guardar(desdeNube = false) {
   try { localStorage.setItem(CLAVE, JSON.stringify(datos)); }
   catch (e) { avisar('No se pudo guardar en este navegador'); }
+  // Con la sesión iniciada, cada cambio se sube a la cuenta (nube.js).
+  if (!desdeNube && window.alGuardar) window.alGuardar(datos);
 }
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
@@ -830,10 +832,18 @@ document.addEventListener('change', e => {
 
 // ── Respaldo ───────────────────────────────────────────────────────────────
 $('#btnRespaldo').addEventListener('click', () => $('#dlgRespaldo').showModal());
-$('#btnExportar').addEventListener('click', () => {
+$('#btnExportar').addEventListener('click', async () => {
+  const nombre = `cuentas-claras-${hoyISO()}.json`;
+  // Dentro de Claude la página no puede descargar sola: lo ofrece la plataforma.
+  const dl = window.claude && typeof window.claude.use === 'function' ? await window.claude.use('downloads') : null;
+  if (dl) {
+    try { await dl.save({ filename: nombre, data: JSON.stringify(datos, null, 2) }); avisar('Respaldo descargado'); }
+    catch (e) { if (e && e.code !== 'declined') avisar('No se pudo descargar el respaldo'); }
+    return;
+  }
   const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = `cuentas-claras-${hoyISO()}.json`;
+  a.href = URL.createObjectURL(blob); a.download = nombre;
   document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 });
@@ -850,7 +860,7 @@ $('#inpImportar').addEventListener('change', async e => {
 });
 $('#btnEjemplo').addEventListener('click', () => { $('#dlgRespaldo').close(); cargarEjemplo(); });
 $('#btnBorrarTodo').addEventListener('click', () => {
-  confirmar('Borrar todos los datos', 'Se eliminarán todas tus deudas, pagos, ingresos y gastos de este dispositivo. Descarga un respaldo antes si lo necesitas.', () => {
+  confirmar('Borrar todos los datos', 'Se eliminarán todas tus deudas, pagos, ingresos y gastos de este equipo (y de tu cuenta, si iniciaste sesión). Descarga un respaldo antes si lo necesitas.', () => {
     datos = VACIO(); guardar(); $('#dlgRespaldo').close(); irA('resumen'); avisar('Datos borrados');
   });
 });
@@ -883,6 +893,15 @@ function cargarEjemplo() {
     confirmar('Cargar ejemplo', 'Esto reemplaza tus datos actuales por datos ficticios. Descarga un respaldo antes si los necesitas.', accion);
   } else accion();
 }
+
+// Puente para nube.js: la sincronización lee y reemplaza los datos por aquí.
+window.app = {
+  obtener: () => datos,
+  tieneDatos: () => !!(datos.deudas.length || datos.ingresos.length || datos.gastos.length || datos.pagos.length),
+  esEjemplo: () => !!datos.ejemplo,
+  reemplazar(d) { datos = Object.assign(VACIO(), d); guardar(true); render(); },
+  avisar,
+};
 
 // ── Inicio ─────────────────────────────────────────────────────────────────
 const inicial = location.hash.slice(1);
