@@ -142,7 +142,7 @@
 <dialog id="dlgRespaldo">
   <form method="dialog">
     <h2>Tus datos</h2>
-    <p>Tus datos quedan guardados en este equipo. Si además <b>entras con tu correo</b> (botón de la persona),
+    <p>Tus datos quedan guardados en este equipo. Si además <b>entras con tu usuario</b> (botón de la persona),
       se guardan en tu cuenta y los ves iguales en el iPad y en el celular (☁ junto al mes).
       Descarga un respaldo de vez en cuando.</p>
     <div class="acciones col">
@@ -162,17 +162,18 @@
   <form id="formCuenta">
     <h2 id="cuentaTitulo">Entrar a tu cuenta</h2>
     <div id="cuentaFuera">
-      <p class="sub">Entra con tu correo (Gmail, Hotmail u otro) y una clave para ver los mismos datos en el iPad y en el celular.</p>
+      <p class="sub">Entra con tu usuario y tu clave para ver los mismos datos en el iPad, en el celular y en la computadora.</p>
       <div class="segmento" role="tablist">
         <button type="button" data-modo="entrar" aria-selected="true">Entrar</button>
         <button type="button" data-modo="crear" aria-selected="false">Crear cuenta</button>
       </div>
-      <label>Correo
-        <input name="correo" id="cuentaCorreoInp" type="email" autocomplete="username" inputmode="email">
+      <label>Usuario <small>(o correo)</small>
+        <input name="usuario" id="cuentaCorreoInp" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false">
       </label>
       <label>Clave <small>(mínimo 6 caracteres)</small>
         <input name="clave" id="cuentaClaveInp" type="password" autocomplete="current-password">
       </label>
+      <label class="check"><input type="checkbox" id="cuentaRecordar" checked> Recordarme en este equipo (no vuelve a pedir la clave)</label>
       <p id="cuentaError" class="error" hidden></p>
       <div class="acciones">
         <button type="button" class="btn-texto" id="btnOlvide">Olvidé mi clave</button>

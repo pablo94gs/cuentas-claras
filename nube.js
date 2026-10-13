@@ -1,4 +1,4 @@
-/* Cuenta (correo + clave) y sincronización entre equipos con Firebase.
+/* Cuenta (usuario o correo + clave) y sincronización entre equipos con Firebase.
  * Cada persona tiene un único documento usuarios/{uid} con { json, rev }.
  * Sin configuración o sin internet, la app sigue funcionando solo en este equipo. */
 const V = 'https://www.gstatic.com/firebasejs/12.19.0/';
@@ -7,6 +7,11 @@ const app = window.app;
 
 const K_REV = 'cuentasclaras.rev';        // revisión de la cuenta que tiene este equipo
 const K_SUCIO = 'cuentasclaras.sucio';    // cambios de este equipo aún sin subir
+const K_USUARIO = 'cuentasclaras.usuario'; // último usuario que entró en este equipo
+// Un usuario sin «@» (p. ej. pguerrero) se guarda en Firebase como pguerrero@cuentasclaras.app.
+const DOMINIO = '@cuentasclaras.app';
+const aCorreo = u => u.includes('@') ? u : u.toLowerCase() + DOMINIO;
+const aUsuario = c => (c || '').endsWith(DOMINIO) ? c.slice(0, -DOMINIO.length) : c;
 const ls = {
   get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
   set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* sin almacenamiento */ } },
@@ -33,7 +38,11 @@ async function iniciar() {
   try { db = fb.initializeFirestore(inst, { localCache: fb.persistentLocalCache() }); }
   catch (e) { db = fb.getFirestore(inst); }
   $('#btnCuenta').hidden = false;
-  fb.onAuthStateChanged(auth, cambioDeSesion);
+  fb.onAuthStateChanged(auth, u => {
+    cambioDeSesion(u);
+    // Primera vez en este equipo: se abre «Entrar» para que no se quede trabajando sin la cuenta.
+    if (!u && !ls.get(K_USUARIO) && !$('#dlgCuenta').open) abrirCuenta();
+  });
 }
 
 // ── Estado visible ─────────────────────────────────────────────────────────
@@ -114,7 +123,7 @@ function cambioDeSesion(u) {
   $('#cuentaFuera').hidden = !!u; $('#cuentaDentro').hidden = !u;
   $('#cuentaTitulo').textContent = u ? 'Tu cuenta' : 'Entrar a tu cuenta';
   if (!u) { estado(''); return; }
-  $('#cuentaCorreo').textContent = u.email;
+  $('#cuentaCorreo').textContent = aUsuario(u.email);
   ref = fb.doc(db, 'usuarios', u.uid);
   estado('☁ Conectando…');
   let primero = true;
@@ -140,19 +149,25 @@ function cambioDeSesion(u) {
 
 // ── Formulario de cuenta ───────────────────────────────────────────────────
 const MENSAJES = {
-  'auth/invalid-credential': 'Correo o clave incorrectos.',
-  'auth/wrong-password': 'Correo o clave incorrectos.',
-  'auth/user-not-found': 'No hay una cuenta con ese correo. Elige «Crear cuenta».',
-  'auth/email-already-in-use': 'Ya existe una cuenta con ese correo. Elige «Entrar».',
+  'auth/invalid-credential': 'Usuario o clave incorrectos.',
+  'auth/wrong-password': 'Usuario o clave incorrectos.',
+  'auth/user-not-found': 'No hay una cuenta con ese usuario. Elige «Crear cuenta».',
+  'auth/email-already-in-use': 'Ese usuario ya existe. Elige «Entrar».',
   'auth/weak-password': 'La clave debe tener al menos 6 caracteres.',
-  'auth/invalid-email': 'Ese correo no es válido.',
+  'auth/invalid-email': 'Ese usuario no es válido: usa letras, números, punto o guion.',
   'auth/too-many-requests': 'Demasiados intentos. Espera unos minutos.',
   'auth/network-request-failed': 'Sin conexión a internet.',
-  'auth/operation-not-allowed': 'El acceso con correo no está activado en Firebase.',
+  'auth/operation-not-allowed': 'El acceso con usuario y clave no está activado en Firebase.',
+  'auth/configuration-not-found': 'El acceso con usuario y clave no está activado en Firebase.',
 };
 const error = t => { const e = $('#cuentaError'); e.hidden = !t; e.textContent = t || ''; };
 
-$('#btnCuenta').addEventListener('click', () => { error(''); $('#dlgCuenta').showModal(); });
+function abrirCuenta() {
+  error('');
+  if (!usuario && !$('#cuentaCorreoInp').value) $('#cuentaCorreoInp').value = ls.get(K_USUARIO) || '';
+  $('#dlgCuenta').showModal();
+}
+$('#btnCuenta').addEventListener('click', abrirCuenta);
 document.querySelectorAll('.segmento button').forEach(b => b.addEventListener('click', () => {
   modo = b.dataset.modo;
   document.querySelectorAll('.segmento button').forEach(x => x.setAttribute('aria-selected', String(x === b)));
@@ -163,12 +178,16 @@ document.querySelectorAll('.segmento button').forEach(b => b.addEventListener('c
 $('#formCuenta').addEventListener('submit', async e => {
   e.preventDefault();
   if (usuario || !auth) return;
-  const correo = $('#cuentaCorreoInp').value.trim(), clave = $('#cuentaClaveInp').value;
-  if (!correo || clave.length < 6) { error('Escribe tu correo y una clave de al menos 6 caracteres.'); return; }
+  const nombre = $('#cuentaCorreoInp').value.trim(), clave = $('#cuentaClaveInp').value;
+  if (!nombre || clave.length < 6) { error('Escribe tu usuario y una clave de al menos 6 caracteres.'); return; }
+  const correo = aCorreo(nombre);
   const btn = $('#btnEntrar'); btn.disabled = true; error('');
   try {
+    // «Recordarme»: la sesión queda guardada en el equipo; si no, se cierra al cerrar el navegador.
+    await fb.setPersistence(auth, $('#cuentaRecordar').checked ? fb.browserLocalPersistence : fb.browserSessionPersistence);
     if (modo === 'crear') await fb.createUserWithEmailAndPassword(auth, correo, clave);
     else await fb.signInWithEmailAndPassword(auth, correo, clave);
+    ls.set(K_USUARIO, nombre);
     $('#cuentaClaveInp').value = '';
     $('#dlgCuenta').close();
     app.avisar(modo === 'crear' ? 'Cuenta creada: tus datos ya se guardan en tu cuenta' : 'Sesión iniciada');
@@ -179,6 +198,7 @@ $('#formCuenta').addEventListener('submit', async e => {
 $('#btnOlvide').addEventListener('click', async () => {
   const correo = $('#cuentaCorreoInp').value.trim();
   if (!correo) { error('Escribe tu correo y vuelve a tocar «Olvidé mi clave».'); return; }
+  if (!correo.includes('@')) { error('Un usuario sin correo no recibe el enlace para cambiar la clave. Si la olvidaste, se cambia desde la consola de Firebase.'); return; }
   if (!auth) return;
   try {
     await fb.sendPasswordResetEmail(auth, correo);
