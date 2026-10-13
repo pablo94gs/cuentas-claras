@@ -61,15 +61,15 @@
     </label>
     <div class="fila2">
       <label>Valor total de la deuda ($)
-        <input name="total" type="number" inputmode="decimal" min="0.01" step="0.01" required>
+        <input name="total" type="text" inputmode="decimal" autocomplete="off" pattern="[0-9]+([.,][0-9]+)?" title="Usa punto o coma para los centavos, ej.: 22,50" required>
       </label>
       <label>Ya pagado antes ($) <small>(opcional)</small>
-        <input name="pagadoAntes" type="number" inputmode="decimal" min="0" step="0.01" value="0">
+        <input name="pagadoAntes" type="text" inputmode="decimal" autocomplete="off" pattern="[0-9]+([.,][0-9]+)?" title="Usa punto o coma para los centavos, ej.: 22,50" value="0">
       </label>
     </div>
     <div class="fila2">
       <label>Cuota mensual ($)
-        <input name="cuota" type="number" inputmode="decimal" min="0" step="0.01" required>
+        <input name="cuota" type="text" inputmode="decimal" autocomplete="off" pattern="[0-9]+([.,][0-9]+)?" title="Usa punto o coma para los centavos, ej.: 22,50" required>
       </label>
       <label>Día de pago
         <input name="diaPago" type="number" inputmode="numeric" min="1" max="31" value="15">
@@ -77,7 +77,7 @@
     </div>
     <div class="fila2">
       <label>Interés anual (%) <small>(opcional)</small>
-        <input name="tasa" type="number" inputmode="decimal" min="0" max="200" step="0.01" placeholder="Ej.: 16.5">
+        <input name="tasa" type="text" inputmode="decimal" autocomplete="off" pattern="[0-9]+([.,][0-9]+)?" title="Usa punto o coma para los centavos, ej.: 22,50" placeholder="Ej.: 16.5">
       </label>
       <label>Desde (mes)
         <input name="inicio" type="month">
@@ -99,7 +99,7 @@
     <p id="pagoA" class="sub"></p>
     <div class="fila2">
       <label>Monto ($)
-        <input name="monto" type="number" inputmode="decimal" min="0.01" step="0.01" required>
+        <input name="monto" type="text" inputmode="decimal" autocomplete="off" pattern="[0-9]+([.,][0-9]+)?" title="Usa punto o coma para los centavos, ej.: 22,50" required>
       </label>
       <label>Fecha
         <input name="fecha" type="date" required>
@@ -123,13 +123,26 @@
       <input name="nombre" required maxlength="60">
     </label>
     <div class="fila2">
-      <label>Monto ($)
-        <input name="monto" type="number" inputmode="decimal" min="0.01" step="0.01" required>
+      <label><span id="lblMontoMov">Monto ($)</span>
+        <input name="monto" type="text" inputmode="decimal" autocomplete="off" pattern="[0-9]+([.,][0-9]+)?" title="Usa punto o coma para los centavos, ej.: 22,50" required>
       </label>
       <label id="lblFechaMov">Mes
         <input name="mes" type="month">
       </label>
     </div>
+    <label>Cómo se repite
+      <select name="frecuencia">
+        <option value="">Monto fijo en el mes</option>
+        <option value="1">Por semana: cada lunes</option>
+        <option value="2">Por semana: cada martes</option>
+        <option value="3">Por semana: cada miércoles</option>
+        <option value="4">Por semana: cada jueves</option>
+        <option value="5">Por semana: cada viernes</option>
+        <option value="6">Por semana: cada sábado</option>
+        <option value="0">Por semana: cada domingo</option>
+      </select>
+    </label>
+    <p class="sub" id="calcSemana" hidden></p>
     <label id="lblEsencial" class="check"><input type="checkbox" name="esencial" checked> Es un gasto esencial (vivienda, comida, servicios, transporte, salud)</label>
     <div class="acciones">
       <button type="button" class="btn sec" data-cerrar>Cancelar</button>

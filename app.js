@@ -52,6 +52,21 @@ function nombreMes(mk, corto = false) {
 const capital = s => s.charAt(0).toUpperCase() + s.slice(1);
 const mesActual = () => mesDe(new Date());
 const diasDelMes = mk => { const [a, m] = mk.split('-').map(Number); return new Date(a, m, 0).getDate(); };
+const DIAS_SEM = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+const plural = d => d.endsWith('s') ? d : d + 's';   // sábado → sábados, lunes → lunes
+// Cuántas veces cae ese día de la semana (0 = domingo) en el mes.
+function vecesEnMes(mk, dia) {
+  const [a, m] = mk.split('-').map(Number);
+  let n = 0;
+  for (let d = 1; d <= diasDelMes(mk); d++) if (new Date(a, m - 1, d).getDay() === dia) n++;
+  return n;
+}
+// Monto de un ingreso o gasto en un mes: los semanales (con «dia») se multiplican
+// por las veces que ese día cae en el mes; los demás son fijos.
+const esSemanal = i => i.dia !== undefined && i.dia !== null;
+const montoEn = (i, mk) => esSemanal(i) ? r2(i.monto * vecesEnMes(mk, i.dia)) : i.monto;
+const detalleSemanal = (i, mk) => esSemanal(i)
+  ? `${dinero(i.monto)} × ${vecesEnMes(mk, i.dia)} ${plural(DIAS_SEM[i.dia])} de ${MESES[+mk.slice(5) - 1]}` : '';
 
 const TIPOS = { banco: 'Banco', tarjeta: 'Tarjeta', local: 'Local comercial', persona: 'Persona', otro: 'Otro' };
 
@@ -68,14 +83,14 @@ const pagosMes = (mk, id) => datos.pagos
   .reduce((s, p) => s + p.monto, 0);
 
 function ingresosMes(mk) {
-  return datos.ingresos.filter(i => !i.desde || i.desde <= mk).reduce((s, i) => s + i.monto, 0)
-    + datos.extras.filter(e => e.clase === 'ingreso' && e.mes === mk).reduce((s, e) => s + e.monto, 0);
+  return datos.ingresos.filter(i => !i.desde || i.desde <= mk).reduce((s, i) => s + montoEn(i, mk), 0)
+    + datos.extras.filter(e => e.clase === 'ingreso' && e.mes === mk).reduce((s, e) => s + montoEn(e, mk), 0);
 }
 function gastosMes(mk, soloEsenciales = false) {
   return datos.gastos.filter(g => (!g.desde || g.desde <= mk) && (!soloEsenciales || g.esencial))
-    .reduce((s, g) => s + g.monto, 0)
+    .reduce((s, g) => s + montoEn(g, mk), 0)
     + datos.extras.filter(e => e.clase === 'gasto' && e.mes === mk && (!soloEsenciales || e.esencial))
-      .reduce((s, e) => s + e.monto, 0);
+      .reduce((s, e) => s + montoEn(e, mk), 0);
 }
 
 /* Estado de la cuota de este mes para una deuda. */
@@ -215,10 +230,10 @@ function consejos() {
   // Flujo del mes.
   if (r.ingresos > 0) {
     if (r.libre < 0) {
-      const noEsenc = datos.gastos.filter(g => !g.esencial).sort((a, b) => b.monto - a.monto).slice(0, 3);
+      const noEsenc = datos.gastos.filter(g => !g.esencial).sort((a, b) => montoEn(b, mk) - montoEn(a, mk)).slice(0, 3);
       add('alerta', `Este mes te faltan ${dinero(-r.libre)}`,
         `Tus ingresos (${dinero(r.ingresos)}) no alcanzan para gastos (${dinero(r.gastos)}) y cuotas (${dinero(r.cuotas)}). ` +
-        (noEsenc.length ? `Revisa primero los gastos no esenciales: ${noEsenc.map(g => `${g.nombre} (${dinero(g.monto)})`).join(', ')}. ` : '') +
+        (noEsenc.length ? `Revisa primero los gastos no esenciales: ${noEsenc.map(g => `${g.nombre} (${dinero(montoEn(g, mk))})`).join(', ')}. ` : '') +
         'No pidas un préstamo nuevo para pagar otro: pide a tu acreedor ampliar el plazo para bajar la cuota.');
     } else if (r.libre > 0) {
       const abono = Math.min(extraSugerido(r.libre), r.libre);
@@ -439,34 +454,36 @@ function vistaDeudas() {
 }
 
 function vistaDinero() {
+  const mk = mesActual();
   const lista = (items, tipo) => items.length
-    ? `<ul class="lista">${items.map(i => `<li><div>${esc(i.nombre)}${tipo === 'gasto' && !i.esencial ? ' <span class="chip">No esencial</span>' : ''}</div>
-        <div class="lado"><span class="monto num">${dinero(i.monto)}</span>
+    ? `<ul class="lista">${items.map(i => `<li><div>${esc(i.nombre)}${tipo === 'gasto' && !i.esencial ? ' <span class="chip">No esencial</span>' : ''}${esSemanal(i) ? `<div class="sub">${detalleSemanal(i, mk)}</div>` : ''}</div>
+        <div class="lado"><span class="monto num">${dinero(montoEn(i, mk))}</span>
         <button class="btn-texto" data-accion="borrar-${tipo}" data-id="${i.id}" aria-label="Eliminar">✕</button></div></li>`).join('')}</ul>`
     : '<p class="sub">Nada registrado todavía.</p>';
-  const totI = datos.ingresos.reduce((s, i) => s + i.monto, 0);
-  const totG = datos.gastos.reduce((s, i) => s + i.monto, 0);
+  const totI = datos.ingresos.reduce((s, i) => s + montoEn(i, mk), 0);
+  const totG = datos.gastos.reduce((s, i) => s + montoEn(i, mk), 0);
+  const totalTxt = items => items.some(esSemanal) ? 'Total de ' + MESES[new Date().getMonth()] : 'Total al mes';
   const extras = datos.extras.filter(e => e.mes === mesExtras);
   return `<div class="dos-col" style="margin-top:4px">
     <div class="tarjeta"><div class="seccion-tit" style="margin-top:0"><h2>Ingresos mensuales</h2>
       <button class="btn chico" data-accion="nuevo-ingreso-fijo">+ Agregar</button></div>
-      <p class="sub">Lo que recibes todos los meses: sueldo, arriendos, negocio…</p>
+      <p class="sub">Lo que recibes todos los meses: sueldo, arriendos, negocio… o por semana, como clases de cada sábado.</p>
       ${lista(datos.ingresos, 'ingreso')}
-      ${datos.ingresos.length ? `<div class="total-fila"><span>Total al mes</span><span class="num">${dinero(totI)}</span></div>` : ''}
+      ${datos.ingresos.length ? `<div class="total-fila"><span>${totalTxt(datos.ingresos)}</span><span class="num">${dinero(totI)}</span></div>` : ''}
     </div>
     <div class="tarjeta"><div class="seccion-tit" style="margin-top:0"><h2>Gastos fijos mensuales</h2>
       <button class="btn chico" data-accion="nuevo-gasto-fijo">+ Agregar</button></div>
       <p class="sub">Sin contar las cuotas de deudas, que ya se suman solas.</p>
       ${lista(datos.gastos, 'gasto')}
-      ${datos.gastos.length ? `<div class="total-fila"><span>Total al mes</span><span class="num">${dinero(totG)}</span></div>` : ''}
+      ${datos.gastos.length ? `<div class="total-fila"><span>${totalTxt(datos.gastos)}</span><span class="num">${dinero(totG)}</span></div>` : ''}
     </div>
   </div>
   <div class="tarjeta" style="margin-top:14px">
     <div class="seccion-tit" style="margin-top:0"><h2>Ingresos y gastos extra del mes</h2>
       <input type="month" id="mesExtras" value="${mesExtras}" style="width:auto;min-height:38px"></div>
     <p class="sub">Lo que no se repite: un bono, décimo tercero, una reparación, un viaje…</p>
-    ${extras.length ? `<ul class="lista">${extras.map(e => `<li><div>${esc(e.nombre)} <span class="chip">${e.clase === 'ingreso' ? 'Ingreso' : 'Gasto'}</span></div>
-      <div class="lado"><span class="monto num" style="color:${e.clase === 'ingreso' ? 'var(--bien)' : 'var(--tinta)'}">${e.clase === 'ingreso' ? '+' : '−'}${dinero(e.monto)}</span>
+    ${extras.length ? `<ul class="lista">${extras.map(e => `<li><div>${esc(e.nombre)} <span class="chip">${e.clase === 'ingreso' ? 'Ingreso' : 'Gasto'}</span>${esSemanal(e) ? `<div class="sub">${detalleSemanal(e, e.mes)}</div>` : ''}</div>
+      <div class="lado"><span class="monto num" style="color:${e.clase === 'ingreso' ? 'var(--bien)' : 'var(--tinta)'}">${e.clase === 'ingreso' ? '+' : '−'}${dinero(montoEn(e, e.mes))}</span>
       <button class="btn-texto" data-accion="borrar-extra" data-id="${e.id}" aria-label="Eliminar">✕</button></div></li>`).join('')}</ul>`
       : '<p class="sub">Sin movimientos extra en ' + nombreMes(mesExtras) + '.</p>'}
     <div class="acciones" style="justify-content:flex-start">
@@ -778,9 +795,21 @@ function abrirMov(modo) {
   $('#lblFechaMov').firstChild.textContent = frec === 'fijo' ? 'Desde (mes)' : 'Mes';
   f.mes.value = frec === 'fijo' ? mesActual() : mesExtras;
   $('#lblEsencial').hidden = clase !== 'gasto';
+  calcSemana();
   f.nombre.placeholder = clase === 'ingreso' ? (frec === 'fijo' ? 'Ej.: Sueldo' : 'Ej.: Bono, décimo tercero') : (frec === 'fijo' ? 'Ej.: Arriendo, comida, internet' : 'Ej.: Reparación del carro');
   $('#dlgMov').showModal();
 }
+// Ingresos o gastos por semana: muestra cuánto suma en el mes elegido.
+function calcSemana() {
+  const f = $('#formMov'), semanal = f.frecuencia.value !== '';
+  $('#lblMontoMov').textContent = semanal ? 'Monto por día ($)' : 'Monto ($)';
+  const el = $('#calcSemana'); el.hidden = !semanal;
+  if (!semanal) return;
+  const mk = f.mes.value || mesActual(), dia = Number(f.frecuencia.value), n = vecesEnMes(mk, dia);
+  el.textContent = `${capital(nombreMes(mk))} tiene ${n} ${plural(DIAS_SEM[dia])}: ` +
+    `${dinero(r2(num(f.monto.value)))} × ${n} = ${dinero(r2(num(f.monto.value)) * n)}. Cada mes se calcula solo.`;
+}
+['input', 'change'].forEach(t => $('#formMov').addEventListener(t, calcSemana));
 $('#formMov').addEventListener('submit', e => {
   e.preventDefault();
   const f = e.target, [clase, frec] = modoMov.split('-');
@@ -788,6 +817,7 @@ $('#formMov').addEventListener('submit', e => {
   if (!item.nombre || item.monto <= 0) return;
   const mes = f.mes.value || mesActual();
   if (clase === 'gasto') item.esencial = f.esencial.checked;
+  if (f.frecuencia.value !== '') item.dia = Number(f.frecuencia.value);
   if (frec === 'fijo') { item.desde = mes; (clase === 'ingreso' ? datos.ingresos : datos.gastos).push(item); }
   else { datos.extras.push({ ...item, clase, mes }); mesExtras = mes; }
   guardar(); $('#dlgMov').close(); avisar('Guardado'); render();
